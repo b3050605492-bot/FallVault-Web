@@ -5,7 +5,7 @@ const RES_BZ = IS_SANDBOX ? 'bz/' : '../bz/';
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 26;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 27;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -1505,7 +1505,7 @@ function closeWall() { document.getElementById('screenWall').classList.remove('s
 function renderWallPreview() { /* 预览改由裁剪框承担（openCrop） */ }
 function renderWallGrid() {
   document.getElementById('wallGrid').innerHTML = WALLPAPERS.map((w, i) =>
-    '<div class="wall-thumb' + (i === wallIdx ? ' sel' : '') + '" data-i="' + i + '" style="background-image:url(\'../bz/' + w.f + '\')" onclick="setWall(' + i + ')" title="' + w.n + '"></div>'
+    '<div class="wall-thumb' + (i === wallIdx ? ' sel' : '') + '" data-i="' + i + '" style="background-image:url(\'' + RES_BZ + w.f + '\')" onclick="setWall(' + i + ')" title="' + w.n + '"></div>'
   ).join('');
 }
 function pickWallFile() { document.getElementById('wallInput').click(); }

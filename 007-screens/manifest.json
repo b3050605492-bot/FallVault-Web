@@ -1,10 +1,10 @@
 {
  "version": 1,
- "rev": 26,
- "msg": "修复: 云更新后logo/壁纸消失(沙盒资源路径适配) + 加号贴合tab栏不再凸出",
+ "rev": 27,
+ "msg": "修复: 壁纸背景消失(CSS规则断链重建+缩略图路径适配)",
  "files": {
-  "index.html": "3eee5a7c",
-  "extra.js": "8c2f5196",
+  "index.html": "ae8c0038",
+  "extra.js": "5b2d5d71",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59",
   "assets/fallvault-logo.png": "f885ed78",
