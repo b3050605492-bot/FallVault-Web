@@ -1,9 +1,10 @@
 {
- "version": 20,
- "msg": "首版发布：云更新上线 + 卡片画廊自适应/半藏 + 有效期MM-DD校验 + 银行名等高校正 + CVV4位",
+ "version": 1,
+ "rev": 20,
+ "msg": "首版发布：云更新上线(v1) + 卡片画廊自适应/半藏 + 有效期MMDD校验 + 银行名等高 + CVV4位 + 删除卡片确认修复",
  "files": {
-  "index.html": "f058c166",
-  "extra.js": "cf130a68",
+  "index.html": "e72b9adb",
+  "extra.js": "35bba896",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59"
  }

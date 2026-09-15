@@ -1,6 +1,9 @@
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
-const FV_LOCAL_VER = 19;   // 当前内置资源版本；发布云端新资源时 +1
+// 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
+const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1）
+const FV_REV = 20;         // 内置资源 rev（每次发布自动 +1，发布脚本会回写此处）
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens';
+function fvCurrentRev() { return Math.max(+ (localStorage.getItem('fvRev') || 0), FV_REV); }
 function hasUpdateBridge() {
   return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.updateSave);
 }
@@ -29,9 +32,9 @@ async function checkForUpdate(silent) {
   if (!hasUpdateBridge()) { if (!silent) showToast('云更新仅真机 App 可用'); return; }
   try {
     const m = JSON.parse(await fvFetchText(FV_CDN + '/manifest.json'));
-    if (!m || !m.version) throw new Error('manifest 无效');
-    if (m.version <= FV_LOCAL_VER) { if (!silent) showToast('已是最新版本 v' + FV_LOCAL_VER); return; }
-    fvConfirm('发现新版本 v' + m.version + '（当前 v' + FV_LOCAL_VER + '）' + (m.msg ? '<br><span style="font-size:12px;color:rgba(255,255,255,.55)">' + m.msg + '</span><br>' : '') + '<span style="font-size:11px;color:rgba(255,255,255,.4)">下载后重启 App 生效</span>', () => fvDoUpdate(m), null);
+    if (!m || !m.rev) throw new Error('manifest 无效');
+    if (m.rev <= fvCurrentRev()) { if (!silent) showToast('已是最新版本 v1'); return; }
+    fvConfirm('发现新版本 v1' + (m.msg ? '<br><span style="font-size:12px;color:rgba(255,255,255,.55)">' + m.msg + '</span><br>' : '') + '<span style="font-size:11px;color:rgba(255,255,255,.4)">下载后重启 App 生效</span>', () => fvDoUpdate(m), null);
   } catch (e) {
     if (!silent) showToast('检查更新失败：' + e.message);
   }
@@ -47,7 +50,8 @@ async function fvDoUpdate(m) {
       const txt = await fvFetchText(FV_CDN + '/' + f);
       await fvSendFile(f, txt);
     }
-    showToast('已更新到 v' + m.version + '，请重启 App 生效');
+    localStorage.setItem('fvRev', String(m.rev));
+    showToast('已更新到最新版，请重启 App 生效');
   } catch (e) {
     showToast('更新失败：' + e.message + '（可重试或重启）');
   }
