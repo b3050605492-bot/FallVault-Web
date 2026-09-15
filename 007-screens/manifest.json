@@ -1,10 +1,10 @@
 {
  "version": 1,
- "rev": 27,
- "msg": "修复: 壁纸背景消失(CSS规则断链重建+缩略图路径适配)",
+ "rev": 28,
+ "msg": "壁纸改网络URL(jsDelivr CDN) 联网优先/离线回退本地 根治壁纸消失",
  "files": {
   "index.html": "ae8c0038",
-  "extra.js": "5b2d5d71",
+  "extra.js": "43be1ea6",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59",
   "assets/fallvault-logo.png": "f885ed78",

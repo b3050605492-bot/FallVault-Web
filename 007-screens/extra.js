@@ -5,7 +5,7 @@ const RES_BZ = IS_SANDBOX ? 'bz/' : '../bz/';
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 27;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 28;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -1265,7 +1265,7 @@ let wallIdx = 0;
 
 function cycleWall() {
   wallIdx = (wallIdx + 1) % WALLPAPERS.length;
-  applyWallpaper("url('" + RES_BZ + WALLPAPERS[wallIdx].f + "')", WALLPAPERS[wallIdx].n);
+  wallFancy(WALLPAPERS[wallIdx].f, WALLPAPERS[wallIdx].n);
 }
 
 // ===== 免验证时长页 =====
@@ -1505,7 +1505,7 @@ function closeWall() { document.getElementById('screenWall').classList.remove('s
 function renderWallPreview() { /* 预览改由裁剪框承担（openCrop） */ }
 function renderWallGrid() {
   document.getElementById('wallGrid').innerHTML = WALLPAPERS.map((w, i) =>
-    '<div class="wall-thumb' + (i === wallIdx ? ' sel' : '') + '" data-i="' + i + '" style="background-image:url(\'' + RES_BZ + w.f + '\')" onclick="setWall(' + i + ')" title="' + w.n + '"></div>'
+    '<div class="wall-thumb' + (i === wallIdx ? ' sel' : '') + '" data-i="' + i + '" onclick="setWall(' + i + ')" title="' + w.n + '"><img src="' + WALL_CDN + w.f + '" onerror="this.src=\'' + RES_BZ + w.f + '\'" alt=""></div>'
   ).join('');
 }
 function pickWallFile() { document.getElementById('wallInput').click(); }
@@ -1662,8 +1662,29 @@ function applyCrop() {
 }
 function setWall(i) {
   wallIdx = i;
-  applyWallpaper("url('" + RES_BZ + WALLPAPERS[i].f + "')", WALLPAPERS[i].n);
+  wallFancy(WALLPAPERS[i].f, WALLPAPERS[i].n);
   renderWallGrid();
+}
+// 壁纸一律走这：网络（jsDelivr）优先 → 失败/6秒超时 → 本地 bz/。背景与染色都用它
+function wallFancy(f, name) {
+  const net = WALL_CDN + f;
+  const local = RES_BZ + f;
+  let used = false;
+  const useLocal = () => {
+    if (used) return; used = true;
+    applyWallpaper(local, name);
+    applyTint(local);
+  };
+  const useNet = () => {
+    if (used) return; used = true;
+    applyWallpaper(net, name);
+    applyTint(net);          // 染色也走网络图（crossOrigin ✓）
+  };
+  const t = new Image();
+  t.onload = useNet;
+  t.onerror = useLocal;
+  t.src = net;
+  setTimeout(useLocal, 6000);   // 6 秒拿不到网络图 → 本地兜底
 }
 function applyWallpaper(img, name) {
   const phone = document.getElementById('phone');
@@ -1750,7 +1771,7 @@ function settingTap(name) {
         if (lg) lg.src = RES_BASE + 'fallvault-logo.png'; } catch (e) {}
 })();
 // 打开即呈现锁屏：自动聚焦密码框 + 自动尝试一次 Face ID
-applyTint("url('" + RES_BZ + "bz2.jpg')");   // 启动时按默认壁纸给玻璃染色
+applyTint(WALL_CDN + 'bz2.jpg');   // 启动默认壁纸（网络优先，异常时 tint 清除不影响显示）   // 启动时按默认壁纸给玻璃染色
 lockInit(true);
 // 预热人脸模型：第一次 Face ID 验证要加载 3 个模型（约 8MB），
 // 冷加载会让首次识别"卡"几秒；这里启动后后台异步加载，首次验证时模型已在内存
@@ -1889,7 +1910,7 @@ if (location.search.includes('debug')) {
     setWall(1);
     const wallApplied = document.getElementById('wallHint').textContent === WALLPAPERS[1].n;
     setWall(0);                                       // 还原
-    applyTint("url('" + RES_BZ + "bz2.jpg')");                // 还原染色（setWall 的取色是异步的，不补这一句会被上一次的黑色壁纸覆盖）
+    applyTint(WALL_CDN + 'bz2.jpg');   // 启动默认壁纸（网络优先，异常时 tint 清除不影响显示）                // 还原染色（setWall 的取色是异步的，不补这一句会被上一次的黑色壁纸覆盖）
     // 自定义壁纸必须用 url() 包裹（否则 CSS 判无效 → 上传后无效果）
     const testDataURL = 'data:image/png;base64,iVBORw0KGgo=';
     applyWallpaper('url(' + testDataURL + ')', '自定义');
