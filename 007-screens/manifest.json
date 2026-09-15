@@ -1,10 +1,10 @@
 {
  "version": 1,
- "rev": 28,
- "msg": "壁纸改网络URL(jsDelivr CDN) 联网优先/离线回退本地 根治壁纸消失",
+ "rev": 29,
+ "msg": "修复: 启动未设壁纸背景(改wallFancy统一入口) + 删除tab栏缺口黑洞",
  "files": {
-  "index.html": "ae8c0038",
-  "extra.js": "43be1ea6",
+  "index.html": "624b8a43",
+  "extra.js": "6de6a736",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59",
   "assets/fallvault-logo.png": "f885ed78",

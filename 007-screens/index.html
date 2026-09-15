@@ -205,8 +205,6 @@
     box-shadow: 0 12px 36px rgba(0,0,0,.45);
     display: flex; align-items: stretch;
     /* Figma 布尔缺口：顶部中央挖半圆（圆心在顶下 8px，半径 37）— 过渡加宽让尖角圆润 */
-    -webkit-mask-image: radial-gradient(circle at 50% 8px, transparent 0 31px, #000 42px);
-    mask-image: radial-gradient(circle at 50% 8px, transparent 0 31px, #000 42px);
   }
   #tabbar::before { content: ""; position: absolute; inset: 0; z-index: 5; pointer-events: none; border-radius: 26px; box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 -1px 0 rgba(255,255,255,.04); }
   #tabbar::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -28px 56px -30px rgba(120,180,255,.22); border-radius: 26px; }

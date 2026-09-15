@@ -5,7 +5,7 @@ const RES_BZ = IS_SANDBOX ? 'bz/' : '../bz/';
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 28;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 29;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -1771,7 +1771,7 @@ function settingTap(name) {
         if (lg) lg.src = RES_BASE + 'fallvault-logo.png'; } catch (e) {}
 })();
 // 打开即呈现锁屏：自动聚焦密码框 + 自动尝试一次 Face ID
-applyTint(WALL_CDN + 'bz2.jpg');   // 启动默认壁纸（网络优先，异常时 tint 清除不影响显示）   // 启动时按默认壁纸给玻璃染色
+wallFancy('bz2.jpg', 'BZ2');   // 启动默认壁纸：网络优先→本地回退；设置背景图+玻璃染色
 lockInit(true);
 // 预热人脸模型：第一次 Face ID 验证要加载 3 个模型（约 8MB），
 // 冷加载会让首次识别"卡"几秒；这里启动后后台异步加载，首次验证时模型已在内存
