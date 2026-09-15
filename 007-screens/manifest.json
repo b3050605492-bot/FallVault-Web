@@ -1,14 +1,11 @@
 {
  "version": 1,
- "rev": 29,
- "msg": "修复: 启动未设壁纸背景(改wallFancy统一入口) + 删除tab栏缺口黑洞",
+ "rev": 30,
+ "msg": "【最终版】删除云更新功能，壁纸保留网络+本地双通道",
  "files": {
-  "index.html": "624b8a43",
-  "extra.js": "6de6a736",
+  "index.html": "1036e4be",
+  "extra.js": "5b4519f1",
   "screens.js": "783fa497",
-  "icons.js": "5b4a5f59",
-  "assets/fallvault-logo.png": "f885ed78",
-  "bz/bz2.jpg": "0586a5c5",
-  "bz/iPhone 14 Wallpaper Black Mekan0.com.png": "c0036b9a"
+  "icons.js": "5b4a5f59"
  }
 }

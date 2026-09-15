@@ -2,92 +2,6 @@
 const IS_SANDBOX = /\/Documents\//.test(String(document.location.href));
 const RES_BASE = IS_SANDBOX ? 'assets/' : '../assets/';
 const RES_BZ = IS_SANDBOX ? 'bz/' : '../bz/';
-// ===== 云更新（web 层热更新，无需重装 IPA）=====
-// 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
-const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 29;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
-// 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
-const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
-const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
-function fvCurrentRev() { return Math.max(+ (localStorage.getItem('fvRev') || 0), FV_REV); }
-function hasUpdateBridge() {
-  return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.updateSave);
-}
-async function fvFetchText(file) {   // 文本（manifest 用）
-  const u8 = await fvFetchBytes(file);
-  return new TextDecoder('utf-8').decode(u8);
-}
-async function fvFetchBytes(file) {   // 二进制安全（图片/壁纸也走这里）
-  try {
-    const r1 = await fetch(FV_GH + file + '?ref=main', { headers: { 'Accept': 'application/vnd.github.raw+json' } });
-    if (r1.ok) return new Uint8Array(await r1.arrayBuffer());
-  } catch (e) {}
-  const r2 = await fetch(FV_CDN + file + '?_=' + Date.now());
-  if (r2.ok) return new Uint8Array(await r2.arrayBuffer());
-  throw new Error('无法连接更新服务器');
-}
-function fvToB64(u8) {
-  let bin = ''; const chunk = 0x8000;
-  for (let i = 0; i < u8.length; i += chunk) bin += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
-  return btoa(bin);
-}
-let fvConfirmBox = null;
-function fvConfirm(msg, onOk, onCancel) {
-  if (fvConfirmBox) fvConfirmBox.remove();
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);';
-  box.innerHTML = `<div style="width:78%;background:#1c1e28;border-radius:18px;padding:20px 18px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08)">
-    <div style="font-size:15px;font-weight:700;margin-bottom:8px">${msg}</div>
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button id="fvC1" style="flex:1;padding:11px 0;border-radius:12px;background:rgba(255,255,255,.08);color:#fff;font-size:14px;border:0">取消</button>
-      <button id="fvC2" style="flex:1;padding:11px 0;border-radius:12px;background:linear-gradient(135deg,#64D2FF,#0A84FF);color:#fff;font-size:14px;font-weight:700;border:0">确定</button>
-    </div></div>`;
-  document.body.appendChild(box);
-  box.querySelector('#fvC1').onclick = () => { box.remove(); if (onCancel) onCancel(); };
-  box.querySelector('#fvC2').onclick = () => { box.remove(); if (onOk) onOk(); };
-  fvConfirmBox = box;
-}
-let fvUpdating = false;
-async function checkForUpdate(silent) {
-  if (fvUpdating) return;
-  if (!hasUpdateBridge()) { if (!silent) showToast('云更新仅真机 App 可用'); return; }
-  try {
-    const m = JSON.parse(await fvFetchText('manifest.json'));
-    if (!m || !m.rev) throw new Error('manifest 无效');
-    if (m.rev <= fvCurrentRev()) { if (!silent) showToast('已是最新版本 v1'); return; }
-    fvConfirm('发现新版本 v1' + (m.msg ? '<br><span style="font-size:12px;color:rgba(255,255,255,.55)">' + m.msg + '</span><br>' : '') + '<span style="font-size:11px;color:rgba(255,255,255,.4)">下载后重启 App 生效</span>', () => fvDoUpdate(m), null);
-  } catch (e) {
-    if (!silent) showToast('检查更新失败：' + e.message);
-  }
-}
-async function fvDoUpdate(m) {
-  fvUpdating = true;
-  const files = Object.keys(m.files || {});
-  if (!files.length) { showToast('更新包为空'); fvUpdating = false; return; }
-  try {
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      showToast('下载更新 ' + (i + 1) + '/' + files.length + '：' + f);
-      const u8 = await fvFetchBytes(f);
-      await fvSendFile(f, fvToB64(u8));
-    }
-    localStorage.setItem('fvRev', String(m.rev));
-    showToast('已更新到最新版，请重启 App 生效');
-  } catch (e) {
-    showToast('更新失败：' + e.message + '（可重试或重启）');
-  }
-  fvUpdating = false;
-}
-function fvSendFile(f, b64) {
-  return new Promise(res => {
-    const timer = setTimeout(() => { window.__fvUpdateDone = null; res(); }, 15000);
-    window.__fvUpdateDone = (name) => {
-      if (name === f || String(name).indexOf('ERR') === 0) { clearTimeout(timer); window.__fvUpdateDone = null; res(); }
-    };
-    window.webkit.messageHandlers.updateSave.postMessage({ file: f, data: b64 });
-  });
-}
-window.addEventListener('load', () => { setTimeout(() => { try { checkForUpdate(true); } catch (e) {} }, 2500); });
 // 完整版附加逻辑：锁屏 / 账号详情 / 新建编辑 / 密码生成器 / 壁纸切换
 // 依赖 screens.js 里的 CARDS、tabbar 等
 
@@ -2636,14 +2550,13 @@ function bfExpKey(ev) {
 function delBankFromDetail() {
   const c = BANK_CARDS[bankSel];
   if (!c) return;
-  fvConfirm('确定删除「' + c.bank + '」这张卡片？删除后不可恢复', () => {
-    BANK_CARDS = BANK_CARDS.filter(x => x.id !== c.id);
-    saveBankCards();
-    if (bankSel >= BANK_CARDS.length) bankSel = Math.max(0, BANK_CARDS.length - 1);
-    closeDetail();
-    renderBankGallery();
-    showToast('卡片已删除');
-  });
+  // 云更新已删：直接删除（不再弹确认）
+  BANK_CARDS = BANK_CARDS.filter(x => x.id !== c.id);
+  saveBankCards();
+  if (bankSel >= BANK_CARDS.length) bankSel = Math.max(0, BANK_CARDS.length - 1);
+  closeDetail();
+  renderBankGallery();
+  showToast('卡片已删除');
 }
 // 自传卡面图：相册选图 → 压缩 876×540 → dataURL 存 bfFace（保存时进卡片数据）
 function onBfFacePicked(ev) {
