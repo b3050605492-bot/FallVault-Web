@@ -1,7 +1,7 @@
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 24;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 25;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -194,34 +194,7 @@ function toggleEditFav() {
   showToast(edFav ? '已加入收藏' : '已取消收藏');
 }
 
-// ===== 免验证时长：切到后台再回来，超过设定时长就要求重新输主密码 =====
-const GRACE_MS = { '立即': 0, '1 分钟': 60000, '5 分钟': 300000, '15 分钟': 900000, '30 分钟': 1800000, '永不': Infinity };
-let hiddenAt = 0;
-// 免验证时长检查（统一入口：桌面由 visibilitychange 触发；真机由 Swift 的 App 前后台通知触发 ——
-// iOS WKWebView 进后台后 JS 被挂起，visibilitychange 不可靠，必须原生补刀）
-function checkGraceRecheck() {
-  const away = Date.now() - (window.__fvBgAt || hiddenAt || 0);
-  window.__fvBgAt = 0; hiddenAt = 0;
-  if (!away) return;
-  const grace = (GRACE_MS[graceValue] === undefined) ? 300000 : GRACE_MS[graceValue];
-  if (fvPwSet && away > grace) {                            // 超时 → 立刻锁屏
-    relockApp();
-    closeDetail(); closeEditor();
-    showToast('已超过免验证时长，请重新解锁', 3200);
-  }
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { hiddenAt = Date.now(); return; }   // 去后台 → 记时间
-  if (!hiddenAt) return;
-  checkGraceRecheck();
-});
-// iOS 壳调用：Swift 进后台注入 window.__fvBgAt，回前台调 window.__fvCheckGrace()
-window.__fvCheckGrace = checkGraceRecheck;
-
-// ===== 文件选择：优先用原生「文件」App（iOS 壳注册了 pickFile / saveFile） =====
-function hasNativeFiles() {
-  try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveFile); } catch (e) { return false; }
-}
+// 免验证功能已删除
 // 导出（备份文件 / TOTP 文本）：让用户自己选保存位置
 function nativeSave(filename, content, mime) {
   if (!hasNativeFiles()) return false;
@@ -266,14 +239,6 @@ function weakHash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31
 // 显示锁屏并初始化：未设置主密码 → 首次设置模式；已设置 → 解锁模式
 // Face ID 未开启时，解锁界面完全不显示人脸识别
 function lockInit(autoFace) {
-  // 免验证兜底：页面被 iOS 后台回收重载时（非主动锁定），只要还在免验证窗口内就直接进入，不输密码
-  if (!fvPwSet && !autoFace) {
-    try {
-      const t = +(localStorage.getItem('fvUnlockedAt') || 0);
-      const grace = (GRACE_MS[graceValue] === undefined) ? 300000 : GRACE_MS[graceValue];
-      if (t && (Date.now() - t) < grace && (Date.now() - t) > 0) { finishUnlock(); return; }
-    } catch (e) {}
-  }
   const lock = document.getElementById('lockScreen');
   const wrap = document.getElementById('pwWrap');
   const msg = document.getElementById('lockMsg');
@@ -866,7 +831,6 @@ function toggleLockPw() {
 // 解锁完成（淡出并隐藏锁屏）
 function finishUnlock() {
   const lock = document.getElementById('lockScreen');
-  try { localStorage.setItem('fvUnlockedAt', String(Date.now())); } catch (e) {}   // 免验证窗口起点（兜底自动解锁用）
   clearInterval(lockTimer);
   faceCloseCam();
   lockFails = 0; lockUntil = 0;
@@ -879,7 +843,6 @@ function finishUnlock() {
 
 // 重新锁定（设置页"立即锁定"）
 function relockApp() {
-  try { localStorage.removeItem('fvUnlockedAt'); } catch (e) {}   // 手动/超时锁：必须输密码，免验证窗口作废
   lockInit(true);
 }
 
@@ -1302,29 +1265,7 @@ function cycleWall() {
 }
 
 // ===== 免验证时长页 =====
-const GRACE_OPTIONS = ['立即', '1 分钟', '5 分钟', '15 分钟', '30 分钟', '永不'];
-let graceValue = '5 分钟';
-
-function openGrace() {
-  renderGrace();
-  document.getElementById('screenGrace').classList.add('show');
-}
-function closeGrace() {
-  document.getElementById('screenGrace').classList.remove('show');
-}
-function renderGrace() {
-  document.getElementById('graceList').innerHTML = GRACE_OPTIONS.map(o => `
-    <div class="drow" onclick="setGrace('${o}')" style="cursor:pointer">
-      <span class="dv">${o}</span>
-      ${o === graceValue ? '<svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:#64D2FF;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12.8l4.3 4.2L19 7.6"/></svg>' : ''}
-    </div>`).join('');
-}
-function setGrace(v) {
-  graceValue = v;
-  renderGrace();
-  document.getElementById('graceHint').textContent = v;
-  showToast('免验证时长：' + v);
-}
+// 免验证功能已删除（2026-09 用户要求）
 
 // ===== GitHub 备份页 =====
 function openBackup() {
@@ -1826,7 +1767,6 @@ if (location.search.includes('debug')) {
   });
   setTimeout(() => {
     const st = [
-      'openGrace=' + (typeof openGrace === 'function'),
       'setChip=' + (typeof setChip === 'function'),
       'openTag=' + (typeof openTag === 'function'),
       'passStrength=' + (typeof passStrength === 'function'),
@@ -2108,10 +2048,7 @@ if (location.search.includes('debug')) {
     const lostUpClean = getComputedStyle(chipX).pointerEvents !== 'none';    // 关键：任何时候都不阻塞点击
     activeTagId = 'all'; renderChips(); renderCards(); renderTOTP(); renderTags();
 
-    // 2) 免验证时长页
-    openGrace();
-    const graceOptions = document.querySelectorAll('#graceList .drow').length;
-    closeGrace();
+    // 2) (免验证功能已删除)
 
     // 3) 详情页：收藏切换 + 强度条 + 密码历史
     openDetail('Github');
@@ -2328,7 +2265,7 @@ if (location.search.includes('debug')) {
     setTimeout(() => { lockInit(false); }, 1500);
 
     document.querySelector('.hdr p').textContent =
-      'SELFCHECK: ' + st + ' || 筛选"工作"=' + filtered + ' 收藏=' + favCount + ' 全部=' + all + ' 免验证选项=' + graceOptions
+      'SELFCHECK: ' + st + ' || 筛选"工作"=' + filtered + ' 收藏=' + favCount + ' 全部=' + all
       + ' || 标签: 新建=' + tagAdded + ' 改名=' + tagRenamed + ' 颜色表=' + colorCells + ' chip图标色=' + chipIconColored + ' 卡=' + tagCards + ' 图标=' + tagIcons + ' 编辑钮=' + tagEdits + ' 固定=' + tagFixed + ' 无新建行=' + noAddRow + ' 右上角加号=' + tagPlusOk + ' 跳转选中=' + jumped + ' 删除=' + tagDeleted + ' 跳转只高亮密码库=' + jumpOnlyVault + ' 切页恢复全部=' + switchResetOK + ' 回库恢复全部=' + backResetOK
       + ' || 验证码标签: chip=' + totpChipCount + ' 收藏筛选=' + totpFav + ' 全部=' + totpAll
       + ' || 设置: 项=' + setItems.length + '/' + needItems.length + '(' + setAll + ') 子页=' + subOK + ' 改密=' + chpwRejectOld + '/' + chpwRejectShort + '/' + chpwRejectMismatch + '/成功' + chpwChanged + ' 壁纸=' + wallThumbs + '/' + wallApplied + '/自定义' + customWallOK + ' TOTP偏移=' + offsetOK + ' 导出=' + exportOK + ' GitHub=' + ghRejectRepo + '/' + ghRejectToken + '/保存' + ghSaved + '/教程' + ghTutorial + '步'

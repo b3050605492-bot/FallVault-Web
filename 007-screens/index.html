@@ -220,7 +220,7 @@
   .tb-slot .ic { color: rgba(255,255,255, calc(.40 + .60 * var(--lit, 0))); transform: scale(calc(1 + .10 * var(--lit, 0))); filter: drop-shadow(0 1px calc(6px * var(--lit, 0)) rgba(255,255,255, calc(.5 * var(--lit, 0)))); }
   .tb-slot.on .ic { color: #fff; }
   .tb-pill {
-    position: absolute; z-index: 1; pointer-events: none;
+    position: absolute; z-index: 60; pointer-events: none;   /* 水珠顶层：滑过 + 号时显示在前面 */
     left: 0; top: 0; width: 44px; height: 34px;   /* 基础尺寸固定，变形全靠 transform scale */
     border-radius: 12px;   /* 圆角方形选中态 */
     transform-origin: 0 0;   /* ⚠️ 必须左上角：引擎 translate3d(左上角) + scale 时中心才准（origin=center 会随变形偏移） */
@@ -244,7 +244,7 @@
   .fab-outer .fab {
     width: 50px; height: 50px; border-radius: 50%;
     background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(255,255,255,.55)); border: .6px solid rgba(255,255,255,.7);
-    box-shadow: 0 8px 22px rgba(0,0,0,.35), inset 0 1.5px 1.5px rgba(255,255,255,.6);
+    box-shadow: inset 0 1.5px 1.5px rgba(255,255,255,.6);   /* 无黑色外阴影 */
     display: flex; align-items: center; justify-content: center; color: #333; cursor: pointer;
     transition: background .25s ease, transform .16s ease;
     -webkit-tap-highlight-color: transparent;
@@ -271,7 +271,7 @@
   .fab-outer.open .fab-act.a2 { transform: translate(-43px, -38px) scale(1); }
   .fab-outer.open .fab-act.a3 { transform: translate(47px, -38px) scale(1); }
 
-  .tb-gap .fab { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(145deg, rgba(255,255,255,.42), rgba(255,255,255,.13)); backdrop-filter: blur(32px) saturate(2.3); -webkit-backdrop-filter: blur(32px) saturate(2.3); box-shadow: inset 0 1.5px 1.5px rgba(255,255,255,.65), 0 10px 26px rgba(0,0,0,.4); border: 0.6px solid rgba(255,255,255,.38); display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
+  .tb-gap .fab { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(145deg, rgba(255,255,255,.42), rgba(255,255,255,.13)); backdrop-filter: blur(32px) saturate(2.3); -webkit-backdrop-filter: blur(32px) saturate(2.3); box-shadow: inset 0 1.5px 1.5px rgba(255,255,255,.65); border: 0.6px solid rgba(255,255,255,.38); display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }   /* 无黑色外阴影 */
   .tb-gap .fab svg { width: 19px; height: 19px; stroke: #fff; fill: none; stroke-width: 2.1; stroke-linecap: round; }
   /* 新建账号加号：点击弹动（+ 触发一次触感反馈） */
   .tb-gap .fab { transition: transform .16s ease; -webkit-tap-highlight-color: transparent; }
@@ -929,7 +929,6 @@
       <div class="sec-title">安全</div>
       <div class="group">
         <div class="row" onclick="openChpw()"><svg class="ri" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg><span class="k">修改主密码</span><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>
-        <div class="row" onclick="openGrace()"><svg class="ri" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="k">免验证时长</span><span class="v" id="graceHint">5 分钟</span><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>
         <div class="row" onclick="lockNow()"><svg class="ri" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg><span class="k">锁定应用</span><span class="v">立即锁定</span><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>
         <div class="row" onclick="toggleFaceId()"><svg class="ri" viewBox="0 0 24 24"><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/><path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"/></svg><span class="k">Face ID 解锁</span><span class="v" id="faceIdState">已关闭</span><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>
       </div>
