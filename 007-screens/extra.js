@@ -1,7 +1,7 @@
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 22;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 23;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -258,6 +258,14 @@ function weakHash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31
 // 显示锁屏并初始化：未设置主密码 → 首次设置模式；已设置 → 解锁模式
 // Face ID 未开启时，解锁界面完全不显示人脸识别
 function lockInit(autoFace) {
+  // 免验证兜底：页面被 iOS 后台回收重载时（非主动锁定），只要还在免验证窗口内就直接进入，不输密码
+  if (!fvPwSet && !autoFace) {
+    try {
+      const t = +(localStorage.getItem('fvUnlockedAt') || 0);
+      const grace = (GRACE_MS[graceValue] === undefined) ? 300000 : GRACE_MS[graceValue];
+      if (t && (Date.now() - t) < grace && (Date.now() - t) > 0) { finishUnlock(); return; }
+    } catch (e) {}
+  }
   const lock = document.getElementById('lockScreen');
   const wrap = document.getElementById('pwWrap');
   const msg = document.getElementById('lockMsg');
@@ -850,6 +858,7 @@ function toggleLockPw() {
 // 解锁完成（淡出并隐藏锁屏）
 function finishUnlock() {
   const lock = document.getElementById('lockScreen');
+  try { localStorage.setItem('fvUnlockedAt', String(Date.now())); } catch (e) {}   // 免验证窗口起点（兜底自动解锁用）
   clearInterval(lockTimer);
   faceCloseCam();
   lockFails = 0; lockUntil = 0;
@@ -862,6 +871,7 @@ function finishUnlock() {
 
 // 重新锁定（设置页"立即锁定"）
 function relockApp() {
+  try { localStorage.removeItem('fvUnlockedAt'); } catch (e) {}   // 手动/超时锁：必须输密码，免验证窗口作废
   lockInit(true);
 }
 
