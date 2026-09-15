@@ -1,7 +1,7 @@
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 23;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 24;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -9,14 +9,23 @@ function fvCurrentRev() { return Math.max(+ (localStorage.getItem('fvRev') || 0)
 function hasUpdateBridge() {
   return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.updateSave);
 }
-async function fvFetchText(file) {
+async function fvFetchText(file) {   // 文本（manifest 用）
+  const u8 = await fvFetchBytes(file);
+  return new TextDecoder('utf-8').decode(u8);
+}
+async function fvFetchBytes(file) {   // 二进制安全（图片/壁纸也走这里）
   try {
     const r1 = await fetch(FV_GH + file + '?ref=main', { headers: { 'Accept': 'application/vnd.github.raw+json' } });
-    if (r1.ok) return r1.text();
+    if (r1.ok) return new Uint8Array(await r1.arrayBuffer());
   } catch (e) {}
   const r2 = await fetch(FV_CDN + file + '?_=' + Date.now());
-  if (r2.ok) return r2.text();
+  if (r2.ok) return new Uint8Array(await r2.arrayBuffer());
   throw new Error('无法连接更新服务器');
+}
+function fvToB64(u8) {
+  let bin = ''; const chunk = 0x8000;
+  for (let i = 0; i < u8.length; i += chunk) bin += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+  return btoa(bin);
 }
 let fvConfirmBox = null;
 function fvConfirm(msg, onOk, onCancel) {
@@ -55,8 +64,8 @@ async function fvDoUpdate(m) {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       showToast('下载更新 ' + (i + 1) + '/' + files.length + '：' + f);
-      const txt = await fvFetchText(f);
-      await fvSendFile(f, txt);
+      const u8 = await fvFetchBytes(f);
+      await fvSendFile(f, fvToB64(u8));
     }
     localStorage.setItem('fvRev', String(m.rev));
     showToast('已更新到最新版，请重启 App 生效');
@@ -65,9 +74,8 @@ async function fvDoUpdate(m) {
   }
   fvUpdating = false;
 }
-function fvSendFile(f, txt) {
+function fvSendFile(f, b64) {
   return new Promise(res => {
-    const b64 = btoa(unescape(encodeURIComponent(txt)));
     const timer = setTimeout(() => { window.__fvUpdateDone = null; res(); }, 15000);
     window.__fvUpdateDone = (name) => {
       if (name === f || String(name).indexOf('ERR') === 0) { clearTimeout(timer); window.__fvUpdateDone = null; res(); }

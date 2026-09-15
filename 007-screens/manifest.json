@@ -1,11 +1,14 @@
 {
  "version": 1,
- "rev": 23,
- "msg": "修复: 免验证时长无效(持久化窗口+后台回收自动免验证) 锁定即作废窗口",
+ "rev": 24,
+ "msg": "资源修复: 云更新包内附 logo/壁纸(assets+bz) 更新桥支持子目录 免验证修复",
  "files": {
   "index.html": "81c5ab0c",
-  "extra.js": "f0c6d187",
+  "extra.js": "cda1a758",
   "screens.js": "783fa497",
-  "icons.js": "5b4a5f59"
+  "icons.js": "5b4a5f59",
+  "assets/fallvault-logo.png": "f885ed78",
+  "bz/bz2.jpg": "0586a5c5",
+  "bz/iPhone 14 Wallpaper Black Mekan0.com.png": "c0036b9a"
  }
 }
