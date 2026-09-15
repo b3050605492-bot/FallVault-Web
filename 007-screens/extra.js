@@ -1,7 +1,11 @@
+// 资源路径适配：桌面/bundle 用 ../（资源在 web 同级）；沙盒(云更新) 资源已随包下载到 007-screens 同级子目录
+const IS_SANDBOX = /\/Documents\//.test(String(document.location.href));
+const RES_BASE = IS_SANDBOX ? 'assets/' : '../assets/';
+const RES_BZ = IS_SANDBOX ? 'bz/' : '../bz/';
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 25;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 26;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -1261,7 +1265,7 @@ let wallIdx = 0;
 
 function cycleWall() {
   wallIdx = (wallIdx + 1) % WALLPAPERS.length;
-  applyWallpaper("url('../bz/" + WALLPAPERS[wallIdx].f + "')", WALLPAPERS[wallIdx].n);
+  applyWallpaper("url('" + RES_BZ + WALLPAPERS[wallIdx].f + "')", WALLPAPERS[wallIdx].n);
 }
 
 // ===== 免验证时长页 =====
@@ -1658,7 +1662,7 @@ function applyCrop() {
 }
 function setWall(i) {
   wallIdx = i;
-  applyWallpaper("url('../bz/" + WALLPAPERS[i].f + "')", WALLPAPERS[i].n);
+  applyWallpaper("url('" + RES_BZ + WALLPAPERS[i].f + "')", WALLPAPERS[i].n);
   renderWallGrid();
 }
 function applyWallpaper(img, name) {
@@ -1740,8 +1744,13 @@ function settingTap(name) {
 }
 
 // ===== 启动 =====
+// 资源路径修正：沙盒(云更新后)下 logo 图标在 assets/ 子目录而非 ../assets/
+(function fixLogo(){
+  try { const lg = document.querySelector('#lockScreen img') || document.querySelector('.appicon img');
+        if (lg) lg.src = RES_BASE + 'fallvault-logo.png'; } catch (e) {}
+})();
 // 打开即呈现锁屏：自动聚焦密码框 + 自动尝试一次 Face ID
-applyTint("url('../bz/bz2.jpg')");   // 启动时按默认壁纸给玻璃染色
+applyTint("url('" + RES_BZ + "bz2.jpg')");   // 启动时按默认壁纸给玻璃染色
 lockInit(true);
 // 预热人脸模型：第一次 Face ID 验证要加载 3 个模型（约 8MB），
 // 冷加载会让首次识别"卡"几秒；这里启动后后台异步加载，首次验证时模型已在内存
@@ -1880,7 +1889,7 @@ if (location.search.includes('debug')) {
     setWall(1);
     const wallApplied = document.getElementById('wallHint').textContent === WALLPAPERS[1].n;
     setWall(0);                                       // 还原
-    applyTint("url('../bz/bz2.jpg')");                // 还原染色（setWall 的取色是异步的，不补这一句会被上一次的黑色壁纸覆盖）
+    applyTint("url('" + RES_BZ + "bz2.jpg')");                // 还原染色（setWall 的取色是异步的，不补这一句会被上一次的黑色壁纸覆盖）
     // 自定义壁纸必须用 url() 包裹（否则 CSS 判无效 → 上传后无效果）
     const testDataURL = 'data:image/png;base64,iVBORw0KGgo=';
     applyWallpaper('url(' + testDataURL + ')', '自定义');

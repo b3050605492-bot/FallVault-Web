@@ -41,7 +41,7 @@
   .dv.sitelink { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .dv.sitelink .out { font-size: 10px; opacity: .75; margin-left: 2px; }
   .dv.sitelink:active { opacity: .55; }
-  .phone { --wallpaper: url('../bz/bz2.jpg'); --tint: 255,255,255; width: 340px; height: 690px; border-radius: 40px; overflow: hidden; position: relative; background:
+  .phone { --wallpaper: none; --tint: 255,255,255; width: 340px; height: 690px; border-radius: 40px; overflow: hidden; position: relative; background: #0a0a0e; }   /* 桌面预览壳（壁纸由 JS applyTint 按环境设置） */
       linear-gradient(180deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,.55) 100%),
       var(--wallpaper) center/cover no-repeat, #0a0a0e;
     box-shadow: 0 24px 50px rgba(0,0,0,.6); }
@@ -240,7 +240,7 @@
   .tb-gap { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; flex: 0 0 0; min-width: 0; transition: flex-grow .42s cubic-bezier(.34,1.3,.5,1); }
 
   /* ===== + 号独立层（Figma 复刻）===== */
-  .fab-outer { position: absolute; left: 50%; bottom: calc(56px + env(safe-area-inset-bottom, 0px)); width: 50px; height: 50px; margin-left: -25px; z-index: 46; }   /* 一半嵌 tab 栏、一半凸出（中心与栏上沿齐平） */
+  .fab-outer { position: absolute; left: 50%; bottom: calc(12px + (69px - 50px) / 2 + env(safe-area-inset-bottom, 0px)); width: 50px; height: 50px; margin-left: -25px; z-index: 46; }   /* 贴合 tab 栏：＋号完全在栏内居中（不凸出） */
   .fab-outer .fab {
     width: 50px; height: 50px; border-radius: 50%;
     background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(255,255,255,.55)); border: .6px solid rgba(255,255,255,.7);

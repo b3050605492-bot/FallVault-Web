@@ -1,10 +1,10 @@
 {
  "version": 1,
- "rev": 25,
- "msg": "删除免验证功能(后台一律锁屏) + 删除加号黑色圆影",
+ "rev": 26,
+ "msg": "修复: 云更新后logo/壁纸消失(沙盒资源路径适配) + 加号贴合tab栏不再凸出",
  "files": {
-  "index.html": "005e733e",
-  "extra.js": "7e5cf18a",
+  "index.html": "3eee5a7c",
+  "extra.js": "8c2f5196",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59",
   "assets/fallvault-logo.png": "f885ed78",
