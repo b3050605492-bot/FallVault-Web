@@ -1,14 +1,22 @@
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
-const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1）
-const FV_REV = 20;         // 内置资源 rev（每次发布自动 +1，发布脚本会回写此处）
-const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens';
+const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
+const FV_REV = 21;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+// 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
+const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
+const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
 function fvCurrentRev() { return Math.max(+ (localStorage.getItem('fvRev') || 0), FV_REV); }
 function hasUpdateBridge() {
   return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.updateSave);
 }
-function fvFetchText(u) {
-  return fetch(u + '?_=' + Date.now()).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); });
+async function fvFetchText(file) {
+  try {
+    const r1 = await fetch(FV_GH + file + '?ref=main', { headers: { 'Accept': 'application/vnd.github.raw+json' } });
+    if (r1.ok) return r1.text();
+  } catch (e) {}
+  const r2 = await fetch(FV_CDN + file + '?_=' + Date.now());
+  if (r2.ok) return r2.text();
+  throw new Error('无法连接更新服务器');
 }
 let fvConfirmBox = null;
 function fvConfirm(msg, onOk, onCancel) {
@@ -31,7 +39,7 @@ async function checkForUpdate(silent) {
   if (fvUpdating) return;
   if (!hasUpdateBridge()) { if (!silent) showToast('云更新仅真机 App 可用'); return; }
   try {
-    const m = JSON.parse(await fvFetchText(FV_CDN + '/manifest.json'));
+    const m = JSON.parse(await fvFetchText('manifest.json'));
     if (!m || !m.rev) throw new Error('manifest 无效');
     if (m.rev <= fvCurrentRev()) { if (!silent) showToast('已是最新版本 v1'); return; }
     fvConfirm('发现新版本 v1' + (m.msg ? '<br><span style="font-size:12px;color:rgba(255,255,255,.55)">' + m.msg + '</span><br>' : '') + '<span style="font-size:11px;color:rgba(255,255,255,.4)">下载后重启 App 生效</span>', () => fvDoUpdate(m), null);
@@ -47,7 +55,7 @@ async function fvDoUpdate(m) {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       showToast('下载更新 ' + (i + 1) + '/' + files.length + '：' + f);
-      const txt = await fvFetchText(FV_CDN + '/' + f);
+      const txt = await fvFetchText(f);
       await fvSendFile(f, txt);
     }
     localStorage.setItem('fvRev', String(m.rev));

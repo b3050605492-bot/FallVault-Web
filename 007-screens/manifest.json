@@ -1,10 +1,10 @@
 {
  "version": 1,
- "rev": 20,
- "msg": "首版发布：云更新上线(v1) + 卡片画廊自适应/半藏 + 有效期MMDD校验 + 银行名等高 + CVV4位 + 删除卡片确认修复",
+ "rev": 21,
+ "msg": "云更新v1(双通道: GitHub API 实时 + CDN 兜底)",
  "files": {
   "index.html": "e72b9adb",
-  "extra.js": "35bba896",
+  "extra.js": "d9748e8f",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59"
  }
