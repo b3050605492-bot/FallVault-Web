@@ -1207,7 +1207,7 @@
       </div>
       <div class="ef">
         <label class="elab">卡号</label>
-        <input id="bfNum" class="einput" inputmode="numeric" autocomplete="one-time-code" placeholder="6214 8300 0000 3885" oninput="bfPreview()">
+        <input id="bfNum" oninput="bfNumKey(event)" placeholder="最多 19 位，自动分组" class="einput" inputmode="numeric" autocomplete="one-time-code" placeholder="6214 8300 0000 3885" oninput="bfPreview()">
       </div>
       <div class="ef">
         <label class="elab">持卡人（卡面拼音）</label>
@@ -1236,6 +1236,20 @@
             <option value="custom">自定义…</option>
           </select>
           <input id="bfOrgCustom" class="einput" placeholder="输入卡组织名称（如：万事达借记）" style="display:none" oninput="bfPreview()">
+        </div>
+      </div>
+      <div class="ef">
+        <label class="elab">卡片类型（选择或自定义）</label>
+        <div class="bf-orgrow">
+          <select id="bfTypeSel" class="einput" onchange="bfTypeChange()">
+            <option value="储蓄卡">储蓄卡（借记）</option>
+            <option value="信用卡">信用卡</option>
+            <option value="借记卡">借记卡</option>
+            <option value="虚拟卡">虚拟卡</option>
+            <option value="贷记卡">贷记卡</option>
+            <option value="custom">自定义…</option>
+          </select>
+          <input id="bfTypeCustom" class="einput" placeholder="输入卡片类型（如：ETC 卡）" style="display:none" oninput="bfPreview()">
         </div>
       </div>
       <div class="ef">

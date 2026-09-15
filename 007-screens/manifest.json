@@ -1,10 +1,10 @@
 {
  "version": 1,
- "rev": 21,
- "msg": "云更新v1(双通道: GitHub API 实时 + CDN 兜底)",
+ "rev": 22,
+ "msg": "新增: 卡号13-19位+自动分组 卡面图裁剪(和壁纸同款) 卡片类型下拉(储蓄/信用/借记/虚拟/自定义)",
  "files": {
-  "index.html": "e72b9adb",
-  "extra.js": "d9748e8f",
+  "index.html": "81c5ab0c",
+  "extra.js": "5998461b",
   "screens.js": "783fa497",
   "icons.js": "5b4a5f59"
  }

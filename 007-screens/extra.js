@@ -1,7 +1,7 @@
 // ===== 云更新（web 层热更新，无需重装 IPA）=====
 // 版本对外恒定 v1（用户只看到 v1 = 最新）；更新判定用内部 rev：内置 FV_REV 与云端 manifest.rev 比较
 const FV_LOCAL_VER = 1;    // 对外显示版本（恒 1，v1 永远是最新）
-const FV_REV = 21;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
+const FV_REV = 22;         // 内置资源 rev（发布脚本每次自动 +1 并回写此处）
 // 更新通道：GitHub API 优先（实时无缓存，未认证 60 次/小时足够）→ 失败自动切 jsDelivr CDN（最长 12h 缓存兜底）
 const FV_GH = 'https://api.github.com/repos/b3050605492-bot/FallVault-Web/contents/007-screens/';
 const FV_CDN = 'https://cdn.jsdelivr.net/gh/b3050605492-bot/FallVault-Web@main/007-screens/';
@@ -1676,13 +1676,21 @@ function applyCrop() {
   const s = cropStageSize();
   const k = cropBase * cropScale;
   const img = document.getElementById('cropImg');
+  const outW = _cropCb ? _cropCb.w : WALL_TW;
+  const outH = _cropCb ? _cropCb.h : WALL_TH;
   const c = document.createElement('canvas');
-  c.width = WALL_TW; c.height = WALL_TH;
+  c.width = outW; c.height = outH;
   const ctx = c.getContext('2d');
   ctx.imageSmoothingQuality = 'high';
   // 框左上角对应到"原图坐标系"的位置，裁出可见区域
-  ctx.drawImage(img, -cropOff.x / k, -cropOff.y / k, s.w / k, s.h / k, 0, 0, WALL_TW, WALL_TH);
+  ctx.drawImage(img, -cropOff.x / k, -cropOff.y / k, s.w / k, s.h / k, 0, 0, outW, outH);
   const out = c.toDataURL('image/jpeg', 0.85);
+  if (_cropCb) {
+    const cb = _cropCb; _cropCb = null;
+    closeCrop();
+    cb.fn(out);
+    return;
+  }
   pendingWall = out;
   try { localStorage.setItem('fvWallCustom', out); } catch (e) {}
   applyWallpaper('url(' + out + ')', '自定义');
@@ -2658,21 +2666,43 @@ function onBfFacePicked(ev) {
   if (!f) return;
   const rd = new FileReader();
   rd.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const cvs = document.createElement('canvas');
-      cvs.width = 876; cvs.height = 540;
-      const ctx = cvs.getContext('2d');
-      const s2 = Math.max(876 / img.width, 540 / img.height);
-      const dw = img.width * s2, dh = img.height * s2;
-      ctx.drawImage(img, (876 - dw) / 2, (540 - dh) / 2, dw, dh);
-      bfFace = cvs.toDataURL('image/jpeg', 0.84);
+    openCropEx(rd.result, 876, 540, (out) => {
+      bfFace = out;
       bfPreview();
-      showToast('已使用上传的卡面图');
-    };
-    img.src = rd.result;
+      showToast('已使用裁剪后的卡面图');
+    });
   };
   rd.readAsDataURL(f);
+}
+let bfNumBad = false;
+function bfNumKey(ev) {
+  const el = ev.target;
+  let v = el.value.replace(/\D/g, '').slice(0, 19);
+  el.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+  bfNumBad = !(v.length >= 13 && v.length <= 19);
+  el.style.borderColor = bfNumBad ? '#FF6961' : '';
+  bfPreview();
+}
+function bfTypeChange() {
+  const sel = document.getElementById('bfTypeSel');
+  const custom = document.getElementById('bfTypeCustom');
+  custom.style.display = sel.value === 'custom' ? '' : 'none';
+  bfPreview();
+}
+function bfTypeLabelOf() {
+  const sel = document.getElementById('bfTypeSel');
+  if (!sel) return '储蓄卡';
+  return sel.value === 'custom' ? (document.getElementById('bfTypeCustom').value.trim() || '其他卡') : sel.value;
+}
+// 通用裁剪：把现有壁纸裁剪器转给卡面用（横版比例 + 回调）
+let _cropCb = null;
+function openCropEx(dataURL, cw, ch, onDone) {
+  _cropCb = { w: cw, h: ch, fn: onDone };
+  const st = document.getElementById('cropStage');
+  if (st) st.style.aspectRatio = cw + ' / ' + ch;
+  document.querySelector('.crop-head').textContent = '调整卡面图片';
+  document.querySelector('.crop-sub').textContent = '拖动图片移动位置 · 滑杆缩放';
+  openCrop(dataURL);
 }
 let bfEditId = null, bfPal = 0, bfOrgVal = 'unionpay';
 function openBankForm(id) {
@@ -2680,11 +2710,15 @@ function openBankForm(id) {
   const c = bfEditId ? BANK_CARDS.find(x => x.id === bfEditId) : null;
   document.getElementById('bankFormTitle').textContent = c ? '编辑银行卡' : '新建银行卡';
   document.getElementById('bfBank').value = c ? c.bank : '';
-  document.getElementById('bfNum').value = c ? c.num : '';
+  document.getElementById('bfNum').value = c ? c.num.replace(/(\d{4})(?=\d)/g, '$1 ') : '';
   document.getElementById('bfHolder').value = c ? c.holder : '';
   document.getElementById('bfExp').value = c ? c.exp : '';
   document.getElementById('bfCvv').value = c ? c.cvv : '';
   bfPal = c ? (c.pal || 0) : 0;
+  const ts = document.getElementById('bfTypeSel');
+  if (ts) ts.value = (c && c.type) ? (['储蓄卡','信用卡','借记卡','虚拟卡','贷记卡'].includes(c.type) ? c.type : 'custom') : '储蓄卡';
+  const tc = document.getElementById('bfTypeCustom');
+  if (tc) { tc.style.display = ts && ts.value === 'custom' ? '' : 'none'; tc.value = (c && c.type && !['储蓄卡','信用卡','借记卡','虚拟卡','贷记卡'].includes(c.type)) ? c.type : ''; }
   bfOrgVal = c ? (c.org || 'unionpay') : 'unionpay';
   bfOrgLabel = c && c.orgLabel ? c.orgLabel : '';
   const sel = document.getElementById('bfOrgSel');
@@ -2724,9 +2758,10 @@ function bfPreview() {
   const tmp = {
     id: bfEditId || 'tmp', pal: bfPal, org: bfOrgVal, type: '储蓄卡',
     bank: document.getElementById('bfBank').value || '银行名称',
-    num: document.getElementById('bfNum').value || '0000000000000000',
+    num: document.getElementById('bfNum').value.replace(/\s/g, '') || '0000000000000000',
     holder: (document.getElementById('bfHolder').value || '持卡人').toUpperCase(),
     exp: document.getElementById('bfExp').value || 'MM/YY',
+    type: bfTypeLabelOf(),
   };
   const pal = BANK_PALETTES[bfPal % BANK_PALETTES.length];
   const faceImg = bfFace ? `<img class="bcb-img" src="${bfFace}" alt="">` : '';
@@ -2736,7 +2771,7 @@ function bfPreview() {
     <div class="shine"></div>
     <div class="brow top"><span class="bankname">${bankEsc(tmp.bank)}</span><span class="org-badge org-${bfOrgVal === 'custom' ? 'custom' : bfOrgVal}"><i class="ob-ico"></i><b>${bankEsc(bfOrgLabelOf())}</b></span></div>
     <div class="brow num">${bankGroup(tmp.num) || '•••• •••• •••• ••••'}</div>
-    <div class="brow bottom"><span>${bankEsc(tmp.holder)} · 储蓄卡</span><b>${bankEsc(tmp.exp)}</b></div>
+    <div class="brow bottom"><span>${bankEsc(tmp.holder)} · ${bankEsc(tmp.type)}</span><b>${bankEsc(tmp.exp)}</b></div>
   </div>`;
 }
 function saveBankForm() {
@@ -2744,12 +2779,13 @@ function saveBankForm() {
   if (!bank) { showToast('请填写银行名称'); return; }
   if (bfExpBad) { showToast('有效期格式不对（月≤12 日≤31）'); return; }
   const num = document.getElementById('bfNum').value.replace(/\s/g, '');
+  if (num.length < 13 || num.length > 19) { showToast('卡号需 13~19 位数字'); return; }
   const card = {
     id: bfEditId || ('k' + Date.now()),
     bank,
     org: bfOrgVal,
     orgLabel: bfOrgVal === 'custom' ? bfOrgLabelOf() : null,
-    type: (bfOrgVal === 'visa' || bfOrgVal === 'mastercard') ? '信用卡' : '储蓄卡',
+    type: bfTypeLabelOf(),
     holder: document.getElementById('bfHolder').value.trim().toUpperCase(),
     num: /^\d{12,19}$/.test(num) ? num : (num || ''),
     exp: document.getElementById('bfExp').value.trim(),
